@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import HomePage from './home';
 
 const VALID_EMAIL = 'username@gmail.com';
 const VALID_PASSWORD = 'Password123!';
@@ -12,6 +13,16 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if user is already logged in (from localStorage)
+  useEffect(() => {
+    const savedLoginState = localStorage.getItem('isLoggedIn');
+    if (savedLoginState === 'true') {
+      setIsLoggedIn(true);
+    }
+    setIsLoading(false);
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,69 +61,29 @@ export default function LoginPage() {
     // Check credentials
     if (email === VALID_EMAIL && password === VALID_PASSWORD) {
       setIsLoggedIn(true);
+      localStorage.setItem('isLoggedIn', 'true');
     } else {
       setLoginError('Invalid email or password');
     }
   };
 
-  // Home Page Component
-  if (isLoggedIn) {
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem('isLoggedIn');
+  };
+
+  // Show loading state while checking localStorage
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
-        {/* Header */}
-        <header className="bg-[#1a1a4d] text-white">
-          <div className="flex items-center justify-between px-6 py-3 gap-4">
-            {/* Logo and Title */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <img
-                src="https://indiadatahub.com/static/svg/whitename.svg"
-                alt="IndiaDataHub Logo"
-                className="h-10 w-auto"
-              />
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex-1 max-w-2xl">
-              <div className="flex items-center bg-white rounded text-sm">
-                <svg className="w-5 h-5 text-gray-400 ml-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search for data and analytics"
-                  className="flex-1 px-3 py-2 bg-white text-gray-700 placeholder-gray-400 focus:outline-none"
-                />
-                <button className="px-4 py-2 text-gray-400 hover:text-gray-600 transition font-medium">
-                  Search
-                </button>
-              </div>
-            </div>
-
-            {/* Right Navigation */}
-            <div className="flex items-center gap-6 flex-shrink-0 text-sm">
-              <button className="hover:text-gray-300 transition">Database</button>
-              <button className="hover:text-gray-300 transition">Calendar</button>
-              <button className="hover:text-gray-300 transition">Help</button>
-              <button onClick={() => setIsLoggedIn(false)} className="hover:text-gray-300 transition">Logout</button>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="w-full max-w-4xl px-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to IndiaDataHub</h1>
-              <p className="text-xl text-gray-600 mb-8">You have successfully logged in!</p>
-              <div className="bg-gradient-to-r from-[#2d1b4e] to-[#3d2563] text-white rounded-lg p-8">
-                <p className="text-lg mb-2">Logged in as:</p>
-                <p className="text-2xl font-semibold">{email}</p>
-              </div>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
     );
+  }
+
+  // Home Page Component
+  if (isLoggedIn) {
+    return <HomePage onLogout={handleLogout} />;
   }
 
   // Login Page Component
