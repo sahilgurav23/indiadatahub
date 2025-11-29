@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import response1 from '@/data/response1.json';
 import response2 from '@/data/response2.json';
 
@@ -140,7 +140,30 @@ export default function HomePage({ onLogout }: HomePageProps) {
   const [iconStates, setIconStates] = useState<IconState>({});
   const [expandedCategories, setExpandedCategories] = useState<ExpandedState>({});
   const [toolbarFilter, setToolbarFilter] = useState<'bookmark' | 'plus' | 'pin' | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [showGraphModal, setShowGraphModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const itemsPerPage = 10;
+
+  // Load icon states from localStorage on mount
+  useEffect(() => {
+    setIsClient(true);
+    const savedIconStates = localStorage.getItem('iconStates');
+    if (savedIconStates) {
+      try {
+        setIconStates(JSON.parse(savedIconStates));
+      } catch (e) {
+        console.error('Failed to parse saved icon states:', e);
+      }
+    }
+  }, []);
+
+  // Save icon states to localStorage whenever they change
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('iconStates', JSON.stringify(iconStates));
+    }
+  }, [iconStates, isClient]);
 
   const toggleIcon = (itemKey: string, iconType: 'bookmark' | 'plus' | 'pin' | 'more') => {
     setIconStates((prev) => ({
@@ -278,10 +301,10 @@ export default function HomePage({ onLogout }: HomePageProps) {
     if (searchQuery) {
       filtered = filtered.filter(
         (item) =>
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.cat.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.subCat.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.subset.toLowerCase().includes(searchQuery.toLowerCase())
+          (item.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (item.cat?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (item.subCat?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (item.subset?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       );
     }
 
@@ -313,71 +336,82 @@ export default function HomePage({ onLogout }: HomePageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-[#1a1a4d] text-white">
-        <div className="flex items-center justify-between px-6 py-3 gap-4">
+      <header className="bg-[#1a1a4d] text-white sticky top-0 z-40">
+        {/* Top Row - Logo and Navigation */}
+        <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3 gap-2 md:gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <img
               src="https://indiadatahub.com/static/svg/whitename.svg"
               alt="IndiaDataHub Logo"
-              className="h-10 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
           </div>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-2xl">
-            <div className="flex items-center bg-white rounded text-sm">
-              <svg
-                className="w-5 h-5 text-gray-400 ml-3"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search for data and analytics"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="flex-1 px-3 py-2 bg-white text-gray-700 placeholder-gray-400 focus:outline-none"
-              />
-              <button className="px-4 py-2 text-gray-400 hover:text-gray-600 transition font-medium">
-                Search
-              </button>
-            </div>
-          </div>
-
-          {/* Right Navigation */}
-          <div className="flex items-center gap-6 flex-shrink-0 text-sm">
-            <button className="hover:text-gray-300 transition">Database</button>
-            <button className="hover:text-gray-300 transition">Calendar</button>
-            <button className="hover:text-gray-300 transition">Help</button>
+          {/* Right Navigation - Mobile Compact */}
+          <div className="flex items-center gap-1 md:gap-6 flex-shrink-0 text-xs md:text-sm">
+            <button className="hidden sm:inline hover:text-gray-300 transition px-2 py-1 rounded hover:bg-white hover:bg-opacity-10">Database</button>
+            <button className="hidden sm:inline hover:text-gray-300 transition px-2 py-1 rounded hover:bg-white hover:bg-opacity-10">Calendar</button>
+            <button className="hidden sm:inline hover:text-gray-300 transition px-2 py-1 rounded hover:bg-white hover:bg-opacity-10">Help</button>
             {onLogout && (
-              <button onClick={onLogout} className="hover:text-gray-300 transition">
+              <button onClick={onLogout} className="hidden sm:inline hover:text-gray-300 transition px-2 py-1 rounded hover:bg-white hover:bg-opacity-10">
                 Logout
               </button>
             )}
           </div>
         </div>
+
+        {/* Bottom Row - Search Bar */}
+        <div className="px-3 md:px-6 pb-2 md:pb-3">
+          <div className="flex items-center bg-white rounded text-sm">
+            <svg
+              className="w-4 h-4 md:w-5 md:h-5 text-gray-400 ml-2 md:ml-3 flex-shrink-0"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search for data and analytics"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="flex-1 px-2 md:px-3 py-1.5 md:py-2 bg-white text-gray-700 placeholder-gray-400 focus:outline-none text-xs md:text-sm"
+            />
+            <button className="px-2 md:px-4 py-1.5 md:py-2 text-gray-400 hover:text-gray-600 transition font-medium text-xs md:text-sm flex-shrink-0">
+              Search
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button className="text-gray-600 hover:text-gray-900 transition">
+      <div className="bg-gray-50 border-b border-gray-200 px-3 md:px-6 py-2 md:py-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+            {/* Sidebar Toggle Button for Mobile */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden text-gray-600 hover:text-gray-900 transition flex-shrink-0"
+              title="Toggle Categories"
+            >
+              <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <button className="text-gray-600 hover:text-gray-900 transition flex-shrink-0">
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 md:w-5 md:h-5"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -391,13 +425,13 @@ export default function HomePage({ onLogout }: HomePageProps) {
                 />
               </svg>
             </button>
-            <span className="text-sm text-gray-700 font-bold">
+            <span className="text-xs md:text-sm text-gray-700 font-bold truncate">
               Economic Monitor
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 md:gap-3 flex-wrap w-full md:w-auto">
             {/* Search Icon */}
-            <button className="p-2 border border-gray-300 rounded hover:border-gray-400 transition text-gray-600 hover:text-gray-900">
+            <button className="hidden md:block p-2 border border-gray-300 rounded hover:border-gray-400 transition text-gray-600 hover:text-gray-900">
               <svg
                 className="w-5 h-5"
                 xmlns="http://www.w3.org/2000/svg"
@@ -417,14 +451,14 @@ export default function HomePage({ onLogout }: HomePageProps) {
             {/* Bookmark Icon */}
             <button
               onClick={() => setToolbarFilter(toolbarFilter === 'bookmark' ? null : 'bookmark')}
-              className={`p-2 border rounded transition relative ${
+              className={`p-1 md:p-2 border rounded transition relative flex-shrink-0 ${
                 toolbarFilter === 'bookmark'
                   ? 'border-blue-500 bg-blue-50 text-blue-600'
                   : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900'
               }`}
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 md:w-5 md:h-5"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -445,9 +479,9 @@ export default function HomePage({ onLogout }: HomePageProps) {
             </button>
 
             {/* Filter Icon */}
-            <button className="p-2 border border-gray-300 rounded hover:border-gray-400 transition text-gray-600 hover:text-gray-900">
+            <button className="hidden md:block p-1 md:p-2 border border-gray-300 rounded hover:border-gray-400 transition text-gray-600 hover:text-gray-900">
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 md:w-5 md:h-5"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -463,20 +497,20 @@ export default function HomePage({ onLogout }: HomePageProps) {
             </button>
 
             {/* Selected Count Badge */}
-            <span className="text-sm font-medium text-gray-700 px-3 py-1.5">
+            <span className="text-xs md:text-sm font-medium text-gray-700 px-2 md:px-3 py-1.5 whitespace-nowrap">
               Selected ({cartCount})
             </span>
 
             {/* Shopping Cart Icon */}
             <button
               onClick={() => setToolbarFilter(toolbarFilter === 'plus' ? null : 'plus')}
-              className={`p-2 border rounded transition relative ${
+              className={`p-1 md:p-2 border rounded transition relative flex-shrink-0 ${
                 toolbarFilter === 'plus'
                   ? 'border-blue-500 bg-blue-50 text-blue-600'
                   : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900'
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-5 md:h-5">
                 <circle cx="8" cy="21" r="1"/>
                 <circle cx="19" cy="21" r="1"/>
                 <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
@@ -491,13 +525,13 @@ export default function HomePage({ onLogout }: HomePageProps) {
             {/* Pin Icon */}
             <button
               onClick={() => setToolbarFilter(toolbarFilter === 'pin' ? null : 'pin')}
-              className={`p-2 border rounded transition relative ${
+              className={`p-1 md:p-2 border rounded transition relative flex-shrink-0 ${
                 toolbarFilter === 'pin'
                   ? 'border-blue-500 bg-blue-50 text-blue-600'
                   : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900'
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(-45deg)' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(-45deg)' }} className="md:w-5 md:h-5">
                 <path d="M12 17v5"/>
                 <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
               </svg>
@@ -509,9 +543,11 @@ export default function HomePage({ onLogout }: HomePageProps) {
             </button>
 
             {/* View Graph Button */}
-            <button className="bg-[#1a1a4d] text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#0f0f2e] transition flex items-center gap-2">
+            <button 
+              onClick={() => setShowGraphModal(true)}
+              className="bg-[#1a1a4d] text-white px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded text-xs md:text-sm font-medium hover:bg-[#0f0f2e] transition flex items-center gap-1 md:gap-2 whitespace-nowrap flex-shrink-0">
               <svg
-                className="w-4 h-4"
+                className="w-3 h-3 md:w-4 md:h-4"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -530,12 +566,36 @@ export default function HomePage({ onLogout }: HomePageProps) {
         </div>
       </div>
 
+      {/* Sidebar Overlay Backdrop - Mobile Only */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Left Sidebar */}
-        <aside className="w-64 bg-gray-50 border-r border-gray-200 p-4">
-          {/* Categories Dropdown */}
-          <div className="mb-6">
+        <aside className={`${sidebarOpen ? 'flex flex-col' : 'hidden'} lg:flex lg:flex-col w-full lg:w-64 bg-gray-50 border-r border-gray-200 lg:min-h-screen fixed lg:static left-0 lg:left-auto top-0 lg:top-auto h-screen lg:h-auto z-40 lg:z-auto`}>
+          {/* Sidebar Header with Close Button */}
+          <div className="flex items-center justify-between px-4 py-3 lg:hidden border-b border-gray-200 flex-shrink-0 bg-white">
+            <h3 className="text-sm font-semibold text-gray-900">Categories</h3>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-gray-600 hover:text-gray-900 active:text-gray-800 transition flex-shrink-0 p-1.5 rounded hover:bg-gray-100"
+              title="Close sidebar"
+            >
+              <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Sidebar Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Categories Dropdown */}
+            <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Categories
             </label>
@@ -686,10 +746,11 @@ export default function HomePage({ onLogout }: HomePageProps) {
               );
             })}
           </nav>
+            </div>
         </aside>
 
         {/* Right Content Area */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 w-full">
           {/* Content Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -722,7 +783,7 @@ export default function HomePage({ onLogout }: HomePageProps) {
             </div>
 
             {/* Column Headers */}
-            <div className="grid gap-4 px-4 py-3 bg-gray-100 rounded font-semibold text-sm text-gray-700 border border-gray-200" style={{ gridTemplateColumns: '2fr 1fr 1fr 0.8fr' }}>
+            <div className="hidden md:grid gap-4 px-4 py-3 bg-gray-100 rounded font-semibold text-sm text-gray-700 border border-gray-200" style={{ gridTemplateColumns: '2fr 1fr 1fr 0.8fr' }}>
               <div>New Releases</div>
               <div>Range</div>
               <div>Unit</div>
@@ -745,7 +806,68 @@ export default function HomePage({ onLogout }: HomePageProps) {
                     key={itemKey}
                     className="border border-gray-200 rounded hover:bg-gray-50 transition"
                   >
-                    <div className="grid gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0 text-sm" style={{ gridTemplateColumns: '2fr 1fr 1fr 0.8fr' }}>
+                    {/* Mobile View - Card Layout */}
+                    <div className="md:hidden px-4 py-3 text-sm space-y-2">
+                      <div>
+                        <div className="text-gray-900 font-bold mb-2">{item.title}</div>
+                        <div className="inline-block bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded">
+                          {selectedDataSource === 'imf' 
+                            ? `${item.region || 'N/A'} / ${item.cat} / ${item.subCat}`
+                            : `${item.cat} / ${item.subCat} ${item.subset && `/ ${item.subset}`}`
+                          }
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600"><strong>Range:</strong> {item.freq}</span>
+                        <span className="text-gray-600"><strong>Unit:</strong> {item.unit}</span>
+                      </div>
+                      <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+                        {/* Bookmark Icon */}
+                        <button
+                          onClick={() => toggleIcon(itemKey, 'bookmark')}
+                          className="transition p-1"
+                          style={{ color: '#9ca3af' }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isBookmarkActive ? 'rgb(97, 83, 239)' : 'none'} stroke={isBookmarkActive ? 'rgb(97, 83, 239)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                            <line x1="15" x2="9" y1="10" y2="10" stroke={isBookmarkActive ? 'rgb(97, 83, 239)' : 'currentColor'}/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => toggleIcon(itemKey, 'plus')}
+                          className="transition p-0.5 rounded"
+                          style={{ backgroundColor: isPlusActive ? 'rgb(97, 83, 239)' : 'transparent', padding: '2px' }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={isPlusActive ? 'rgb(97, 83, 239)' : 'none'} stroke={isPlusActive ? 'rgb(97, 83, 239)' : '#9ca3af'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" fill={isPlusActive ? 'rgb(97, 83, 239)' : 'none'} stroke={isPlusActive ? 'rgb(97, 83, 239)' : '#9ca3af'}/>
+                            <path d="M8 12h8" stroke={isPlusActive ? 'white' : '#9ca3af'}/>
+                            <path d="M12 8v8" stroke={isPlusActive ? 'white' : '#9ca3af'}/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => toggleIcon(itemKey, 'pin')}
+                          className="transition p-1"
+                          style={{ color: isPinActive ? 'rgb(97, 83, 239)' : '#9ca3af' }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isPinActive ? 'rgb(97, 83, 239)' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(-45deg)' }}>
+                            <path d="M12 17v5"/>
+                            <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => toggleIcon(itemKey, 'more')}
+                          className="transition p-1"
+                          style={{ color: isMoreActive ? 'rgb(97, 83, 239)' : '#9ca3af' }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isMoreActive ? 'rgb(97, 83, 239)' : 'currentColor'}>
+                            <path d="M12 8a2 2 0 110-4 2 2 0 010 4zM12 14a2 2 0 110-4 2 2 0 010 4zM12 20a2 2 0 110-4 2 2 0 010 4z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Desktop View - Table Layout */}
+                    <div className="hidden md:grid gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0 text-sm" style={{ gridTemplateColumns: '2fr 1fr 1fr 0.8fr' }}>
                       <div>
                         <div className="text-gray-900 font-bold mb-2">{item.title}</div>
                         <div className="inline-block bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded">
@@ -828,49 +950,208 @@ export default function HomePage({ onLogout }: HomePageProps) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 px-4 py-3 bg-gray-50 rounded border border-gray-200">
-              <div className="text-sm text-gray-600">
-                Showing {startIndex + 1} to{' '}
-                {Math.min(startIndex + itemsPerPage, filteredItems.length)} of{' '}
-                {filteredItems.length} records
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  ← Prev
-                </button>
+            <div className="flex items-center justify-center gap-2 md:gap-4 mt-6 pt-4 border-t border-gray-200 flex-wrap">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-2 md:px-3 py-1 border border-gray-300 rounded text-xs md:text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition whitespace-nowrap"
+              >
+                ← Prev
+              </button>
 
-                {/* Page number input and total */}
-                <div className="flex items-center gap-2 mx-2">
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={currentPage}
-                    onChange={(e) => {
-                      const page = parseInt(e.target.value) || 1;
+              <div className="flex items-center gap-1 md:gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value, 10);
+                    if (!isNaN(page)) {
                       handlePageChange(page);
-                    }}
-                    className="w-12 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-                  />
-                  <span className="text-sm text-gray-600">of {totalPages}</span>
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Next →
-                </button>
+                    }
+                  }}
+                  className="w-10 md:w-12 px-2 py-1 border border-gray-300 rounded text-xs md:text-sm text-center"
+                />
+                <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">of {totalPages}</span>
               </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-2 md:px-3 py-1 border border-gray-300 rounded text-xs md:text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition whitespace-nowrap"
+              >
+                Next →
+              </button>
             </div>
           )}
         </main>
       </div>
+
+      {/* Graph Modal */}
+      {showGraphModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl md:max-w-4xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900">Data Visualization</h3>
+              <button
+                onClick={() => setShowGraphModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-3 md:p-6">
+              {paginatedItems.length > 0 ? (
+                <div className="space-y-3 md:space-y-6">
+                  {/* Bar Chart */}
+                  <div className="bg-gray-50 p-3 md:p-6 rounded-lg border border-gray-200">
+                    <h4 className="text-xs md:text-base font-semibold text-gray-900 mb-3 md:mb-4">Items Distribution by Category</h4>
+                    <div className="h-48 md:h-80 bg-white rounded border border-gray-200 flex items-end justify-around p-1 md:p-4 gap-0.5 md:gap-2 overflow-x-auto">
+                      {paginatedItems.slice(0, 8).map((item, idx) => {
+                        const maxHeight = 300;
+                        const height = Math.random() * maxHeight;
+                        return (
+                          <div key={idx} className="flex flex-col items-center flex-1 gap-2">
+                            <div
+                              className="w-full bg-gradient-to-t from-[#1a1a4d] to-[#4d4d7f] rounded-t transition hover:opacity-80"
+                              style={{ height: `${height}px` }}
+                              title={item.title}
+                            />
+                            <span className="text-xs text-gray-600 text-center truncate w-full">
+                              {item.cat?.substring(0, 8)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Line Chart */}
+                  <div className="bg-gray-50 p-3 md:p-6 rounded-lg border border-gray-200">
+                    <h4 className="text-xs md:text-base font-semibold text-gray-900 mb-3 md:mb-4">Data Trend Over Time</h4>
+                    <div className="h-48 md:h-80 bg-white rounded border border-gray-200 relative p-1 md:p-4">
+                      <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
+                        {/* Grid lines */}
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <line
+                            key={`h-${i}`}
+                            x1="0"
+                            y1={i * 75}
+                            x2="800"
+                            y2={i * 75}
+                            stroke="#e5e7eb"
+                            strokeWidth="1"
+                          />
+                        ))}
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                          <line
+                            key={`v-${i}`}
+                            x1={i * 100}
+                            y1="0"
+                            x2={i * 100}
+                            y2="300"
+                            stroke="#e5e7eb"
+                            strokeWidth="1"
+                          />
+                        ))}
+                        {/* Line chart */}
+                        <polyline
+                          points={Array.from({ length: 9 }, (_, i) => `${i * 100},${150 - Math.sin(i * 0.5) * 80}`).join(' ')}
+                          fill="none"
+                          stroke="#1a1a4d"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        {/* Data points */}
+                        {Array.from({ length: 9 }, (_, i) => (
+                          <circle
+                            key={`dot-${i}`}
+                            cx={i * 100}
+                            cy={150 - Math.sin(i * 0.5) * 80}
+                            r="5"
+                            fill="#1a1a4d"
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Pie Chart */}
+                  <div className="bg-gray-50 p-3 md:p-6 rounded-lg border border-gray-200">
+                    <h4 className="text-xs md:text-base font-semibold text-gray-900 mb-3 md:mb-4">Category Breakdown</h4>
+                    <div className="h-48 md:h-80 bg-white rounded border border-gray-200 flex items-center justify-center">
+                      <svg className="w-40 h-40 md:w-64 md:h-64" viewBox="0 0 200 200">
+                        {/* Pie slices */}
+                        <circle cx="100" cy="100" r="80" fill="#1a1a4d" opacity="0.8" />
+                        <circle cx="100" cy="100" r="60" fill="white" />
+                        
+                        {/* Slice 1 */}
+                        <path
+                          d="M 100 100 L 180 100 A 80 80 0 0 1 156.57 156.57 Z"
+                          fill="#4d4d7f"
+                          opacity="0.9"
+                        />
+                        {/* Slice 2 */}
+                        <path
+                          d="M 100 100 L 156.57 156.57 A 80 80 0 0 1 20 100 Z"
+                          fill="#6d6d9f"
+                          opacity="0.9"
+                        />
+                        {/* Slice 3 */}
+                        <path
+                          d="M 100 100 L 20 100 A 80 80 0 0 1 100 20 Z"
+                          fill="#8d8dbf"
+                          opacity="0.9"
+                        />
+                        
+                        {/* Labels */}
+                        <text x="140" y="100" fontSize="12" fill="#1a1a4d" fontWeight="bold">35%</text>
+                        <text x="60" y="150" fontSize="12" fill="#1a1a4d" fontWeight="bold">40%</text>
+                        <text x="70" y="50" fontSize="12" fill="#1a1a4d" fontWeight="bold">25%</text>
+                      </svg>
+                    </div>
+                    <div className="mt-3 md:mt-4 grid grid-cols-1 md:grid-cols-3 gap-1.5 md:gap-4 text-xs md:text-sm">
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <div className="w-2.5 h-2.5 md:w-4 md:h-4 bg-[#4d4d7f] rounded flex-shrink-0"></div>
+                        <span className="text-gray-700 truncate text-xs md:text-sm">Category A (35%)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <div className="w-2.5 h-2.5 md:w-4 md:h-4 bg-[#6d6d9f] rounded flex-shrink-0"></div>
+                        <span className="text-gray-700 truncate text-xs md:text-sm">Category B (40%)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <div className="w-2.5 h-2.5 md:w-4 md:h-4 bg-[#8d8dbf] rounded flex-shrink-0"></div>
+                        <span className="text-gray-700 truncate text-xs md:text-sm">Category C (25%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">No data available to display</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-2 p-3 md:p-6 border-t border-gray-200 sticky bottom-0 bg-white flex-shrink-0">
+              <button
+                onClick={() => setShowGraphModal(false)}
+                className="px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
